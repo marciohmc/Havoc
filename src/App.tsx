@@ -49,32 +49,28 @@ export default function App() {
 # Build Stage
 FROM golang:1.22-alpine AS builder
 
-# Instalar dependências de compilação
+# Instalar dependências de compilação essenciais para o Havoc (CGO + Python)
 RUN apk add --no-cache \
     git build-base python3-dev pkgconfig openssl-dev libffi-dev bash lua5.4-dev
 
 WORKDIR /app
 COPY . .
 
-# --- DETECTAR E BAIXAR MODULOS ---
+# Localizar dinamicamente onde está o go.mod e compilar de forma resiliente
+# Se falhar, o log mostrará a estrutura do seu repositório (ls -R)
 RUN if [ -f "./go.mod" ]; then \
-        go mod download; \
+        echo "Detectado go.mod na raiz" && \
+        go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
     elif [ -f "./teamserver/go.mod" ]; then \
-        cd teamserver && go mod download; \
+        echo "Detectado go.mod na subpasta teamserver" && \
+        cd teamserver && go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
     else \
-        echo "ERRO: go.mod nao encontrado!" && exit 1; \
+        echo "ERRO: go.mod NÃO encontrado! Listando arquivos para depuração:" && \
+        ls -R /app && \
+        exit 1; \
     fi
 
-# --- COMPILAR BINARIO ---
-RUN if [ -f "./main.go" ]; then \
-        go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
-    elif [ -f "./teamserver/main.go" ]; then \
-        cd teamserver && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
-    else \
-        echo "ERRO: main.go nao encontrado!" && exit 1; \
-    fi
-
-# Runtime Stage
+# Runtime Stage - Alpine para o menor footprint possível
 FROM alpine:latest
 RUN apk add --no-cache python3 py3-pip bash openssl lua5.4
 
