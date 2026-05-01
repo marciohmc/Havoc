@@ -272,19 +272,44 @@ Teamserver {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex gap-5 items-start">
+                <div className="p-3 bg-red-100 rounded-xl text-red-600 shrink-0">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-red-900 mb-1">Erro Comum: Dockerfile not found</h3>
+                  <p className="text-red-800 text-sm leading-relaxed">
+                    Se você recebeu o erro <code className="bg-red-100 px-1 rounded">failed to read dockerfile</code>, certifique-se de que o arquivo no seu GitHub se chama exatamente <strong className="underline">Dockerfile</strong> (sem .txt, sem .havoc) e está na pasta raiz.
+                  </p>
+                </div>
+              </div>
               <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm prose prose-indigo max-w-none">
-                <h2 className="text-gray-900">Como implantar no Render</h2>
-                <ol className="text-gray-600 space-y-4">
-                  <li>
-                    <strong>Fork do Havoc:</strong> Você já criou: <code className="text-indigo-600">{forkUrl}</code>
-                  </li>
-                  <li>
-                    <strong>Adicionar Arquivos:</strong> Crie um arquivo chamado <code>Dockerfile</code> na raiz do repositório com o conteúdo da aba "Configs".
-                  </li>
-                  <li>
-                    <strong>Conectar ao Render:</strong> No painel do Render, vá em "New +" e escolha "Web Service". Conecte seu repositório GitHub.
-                  </li>
-                </ol>
+                <h2 className="text-gray-900">Como preencher o formulário no Render</h2>
+                <div className="space-y-4 not-prose">
+                  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors rounded-xl">
+                    <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                    <div>
+                      <p className="font-bold text-gray-900">Name</p>
+                      <p className="text-sm text-gray-600">Use <code className="bg-gray-100 px-1 rounded">havoc-v1-teamserver</code></p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors rounded-xl">
+                    <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                    <div>
+                      <p className="font-bold text-gray-900">Runtime / Language</p>
+                      <p className="text-sm text-gray-600">Escolha obrigatoriamente <strong className="text-indigo-600">Docker</strong></p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors rounded-xl">
+                    <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                    <div>
+                      <p className="font-bold text-gray-900">Build & Start Command</p>
+                      <p className="text-sm text-gray-600 italic">Deixe em branco (o Dockerfile gerencia isso automaticamente)</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-white p-8 rounded-2xl border-2 border-indigo-100 shadow-md">
