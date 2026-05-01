@@ -49,22 +49,35 @@ export default function App() {
 # Build Stage
 FROM golang:1.22-alpine AS builder
 
-# Instalar dependências de compilação essenciais
-RUN apk add --no-cache git build-base python3-dev pkgconfig
+# Instalar todas as dependências necessárias para o Havoc (CGO e Python)
+RUN apk add --no-cache \
+    git \
+    build-base \
+    python3-dev \
+    pkgconfig \
+    openssl-dev \
+    libffi-dev \
+    bash \
+    lua5.4-dev
 
 WORKDIR /app
 
-# Clonar o repositório diretamente (opcional, se já estiver no repo use COPY .)
+# Copia os arquivos do repo
 COPY . .
 
-# Compilar o Teamserver com otimização de tamanho
+# Preparar ambiente Go
 WORKDIR /app/teamserver
-RUN go mod download
+
+# Forçar o download de dependências (Pode falhar se faltar RAM no build)
+# Otimização: Se falhar aqui, tente remover o "-x" para logs menores
+RUN go mod download -x
+
+# Compilar o Teamserver
 RUN go build -ldflags="-s -w" -o havoc-teamserver main.go
 
-# Runtime Stage - Usando Alpine para footprint mínimo
+# Runtime Stage
 FROM alpine:latest
-RUN apk add --no-cache python3 py3-pip bash
+RUN apk add --no-cache python3 py3-pip bash openssl lua5.4
 
 WORKDIR /app
 COPY --from=builder /app/teamserver/havoc-teamserver .
@@ -78,7 +91,6 @@ ENV MALLOC_ARENA_MAX=1
 
 EXPOSE 40056
 
-# Iniciando com o perfil padrão
 CMD ["./havoc-teamserver", "server", "--profile", "./profiles/havoc.yaotl", "-v"]
   `.trim();
 
@@ -281,15 +293,37 @@ Teamserver {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-8"
             >
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex gap-5 items-start">
-                <div className="p-3 bg-red-100 rounded-xl text-red-600 shrink-0">
-                  <AlertTriangle size={24} />
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex gap-5 items-start">
+                  <div className="p-3 bg-red-100 rounded-xl text-red-600 shrink-0">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-red-900 mb-1">Erro: "go mod download" falhando</h3>
+                    <p className="text-red-800 text-sm leading-relaxed mb-3">
+                      Este erro (exit code 1) geralmente significa que o Docker não encontrou o arquivo <code>go.mod</code>.
+                    </p>
+                    <div className="bg-white/50 p-4 rounded-xl border border-red-100 space-y-2">
+                      <p className="text-xs font-bold text-red-700 uppercase">Solução Imediata:</p>
+                      <ul className="text-sm text-red-800 list-disc ml-5 space-y-1">
+                        <li>Verifique se o seu <strong>Dockerfile</strong> está na <strong>raiz</strong> do projeto (e não dentro da pasta teamserver).</li>
+                        <li>Verifique se a pasta <code>teamserver</code> existe e contém o arquivo <code>go.mod</code>.</li>
+                        <li>Atualizei o Dockerfile acima com mais dependências (openssl, libffi, lua) que podem estar causando a falha.</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-red-900 mb-1">Erro Comum: Dockerfile not found</h3>
-                  <p className="text-red-800 text-sm leading-relaxed">
-                    Se você recebeu o erro <code className="bg-red-100 px-1 rounded">failed to read dockerfile</code>, certifique-se de que o arquivo no seu GitHub se chama exatamente <strong className="underline">Dockerfile</strong> (sem .txt, sem .havoc) e está na pasta raiz.
-                  </p>
+
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex gap-5 items-start">
+                  <div className="p-3 bg-red-100 rounded-xl text-red-600 shrink-0">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-red-900 mb-1">Erro Comum: Dockerfile not found</h3>
+                    <p className="text-red-800 text-sm leading-relaxed">
+                      Se você recebeu o erro <code className="bg-red-100 px-1 rounded">failed to read dockerfile</code>, certifique-se de que o arquivo no seu GitHub se chama exatamente <strong className="underline">Dockerfile</strong> (sem .txt, sem .havoc) e está na pasta raiz.
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm prose prose-indigo max-w-none">
