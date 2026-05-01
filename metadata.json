@@ -1,0 +1,6 @@
+{
+  "name": "Havoc Render Configurator",
+  "description": "Tool to configure and optimize Havoc C2 Framework for deployment on Render, specifically tailored for 512MB RAM environments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

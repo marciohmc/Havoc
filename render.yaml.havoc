@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: havoc-teamserver
+    env: docker
+    plan: free
+    region: ohio
+    dockerContext: .
+    dockerFilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: HAVOC_TEAMSERVER_PASSWORD
+        generateValue: true
+      - key: GOMEMLIMIT
+        value: 450MiB
+    disk:
+      name: havoc-data
+      mountPath: /app/data
+      sizeGB: 1
+
+databases:
+  - name: havoc-db
+    plan: free
+    region: ohio

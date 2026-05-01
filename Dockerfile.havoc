@@ -1,0 +1,32 @@
+# Build Stage
+FROM golang:1.22-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git build-base python3-dev pkgconfig
+
+WORKDIR /app
+
+# Clone the repository
+RUN git clone https://github.com/HavocFramework/Havoc.git .
+
+# Compile Teamserver
+WORKDIR /app/teamserver
+RUN go mod download
+RUN go build -ldflags="-s -w" -o havoc-teamserver main.go
+
+# Runtime Stage
+FROM alpine:latest
+RUN apk add --no-cache python3 py3-pip
+
+WORKDIR /app
+COPY --from=builder /app/teamserver/havoc-teamserver .
+COPY --from=builder /app/data ./data
+COPY --from=builder /app/profiles ./profiles
+
+# RAM Optimization
+ENV GOMEMLIMIT=450MiB
+ENV GOGC=50
+
+EXPOSE 40056
+
+CMD ["./havoc-teamserver", "server", "--profile", "./profiles/havoc.yaotl", "-v"]
