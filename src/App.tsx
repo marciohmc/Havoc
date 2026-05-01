@@ -301,14 +301,14 @@ Teamserver {
                   <div>
                     <h3 className="text-lg font-bold text-red-900 mb-1">Erro: "go mod download" falhando</h3>
                     <p className="text-red-800 text-sm leading-relaxed mb-3">
-                      Este erro (exit code 1) geralmente significa que o Docker não encontrou o arquivo <code>go.mod</code>.
+                      Este erro (exit code 1) significa que o Go não achou o arquivo <code>go.mod</code>.
                     </p>
                     <div className="bg-white/50 p-4 rounded-xl border border-red-100 space-y-2">
-                      <p className="text-xs font-bold text-red-700 uppercase">Solução Imediata:</p>
+                      <p className="text-xs font-bold text-red-700 uppercase">Verifique no seu GitHub:</p>
                       <ul className="text-sm text-red-800 list-disc ml-5 space-y-1">
-                        <li>Verifique se o seu <strong>Dockerfile</strong> está na <strong>raiz</strong> do projeto (e não dentro da pasta teamserver).</li>
-                        <li>Verifique se a pasta <code>teamserver</code> existe e contém o arquivo <code>go.mod</code>.</li>
-                        <li>Atualizei o Dockerfile acima com mais dependências (openssl, libffi, lua) que podem estar causando a falha.</li>
+                        <li>Confirme que existe um arquivo <code className="bg-white px-1">HavocV1/teamserver/go.mod</code>.</li>
+                        <li>Se o seu repositório for "flat" (arquivos do teamserver direto na raiz), mude a linha no Dockerfile de <code>WORKDIR /app/teamserver</code> para apenas <code>WORKDIR /app</code>.</li>
+                        <li>Atualizei o Dockerfile principal para ser mais resiliente (veja a aba "Configs").</li>
                       </ul>
                     </div>
                   </div>
