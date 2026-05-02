@@ -27,6 +27,9 @@ RUN cd teamserver && \
 # Runtime Stage
 FROM alpine:latest
 
+# Configurar PATH
+ENV PATH="/usr/bin:${PATH}"
+
 # Dependências de runtime essenciais (Incluindo compiladores para o Demon)
 RUN apk add --no-cache \
     python3 \
