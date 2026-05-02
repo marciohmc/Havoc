@@ -57,10 +57,26 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copia o binário e pastas essenciais do builder
-COPY --from=builder /app/havoc-teamserver .
-COPY --from=builder /app/data ./data
-COPY --from=builder /app/profiles ./profiles
+# Copia TUDO do builder para manter a estrutura (data, profiles, scripts)
+COPY --from=builder /app /app
+
+RUN chmod +x ./havoc-teamserver
+
+ENV GOMEMLIMIT=450MiB
+EXPOSE 40056
+
+# INICIALIZAÇÃO: Corrige os caminhos no perfil ANTES de dar o boot
+CMD ["/bin/sh", "-c", " \
+    PROFILE=$(find . -name 'havoc.yaotl' -print -quit); \
+    if [ -n \"$PROFILE\" ]; then \
+        echo \"Ajustando compiladores em $PROFILE...\"; \
+        sed -i 's|Compiler64.*=.*|Compiler64 = \"/usr/bin/x86_64-w64-mingw32-gcc\"|g' \"$PROFILE\"; \
+        sed -i 's|Compiler86.*=.*|Compiler86 = \"/usr/bin/i686-w64-mingw32-gcc\"|g' \"$PROFILE\"; \
+        sed -i 's|Nasm.*=.*|Nasm = \"/usr/bin/nasm\"|g' \"$PROFILE\"; \
+    fi; \
+    ./havoc-teamserver server --profile \"$PROFILE\" -v \
+"]
+
 
 # Garantir permissão de execução
 RUN chmod +x ./havoc-teamserver
