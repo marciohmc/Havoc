@@ -54,39 +54,57 @@ RUN apk add --no-cache \
     git build-base python3-dev pkgconfig openssl-dev libffi-dev bash lua5.4-dev
 
 WORKDIR /app
-COPY . .
+
+# Clonar o seu repositório diretamente para garantir que o código esteja presente
+# Isso resolve o erro de "go.mod não encontrado"
+RUN git clone https://github.com/marciohmc/HavocV1.git .
 
 # Localizar dinamicamente onde está o go.mod e compilar de forma resiliente
-# Se falhar, o log mostrará a estrutura do seu repositório (ls -R)
-RUN if [ -f "./go.mod" ]; then \
-        echo "Detectado go.mod na raiz" && \
-        go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
-    elif [ -f "./teamserver/go.mod" ]; then \
-        echo "Detectado go.mod na subpasta teamserver" && \
+RUN if [ -f "./teamserver/go.mod" ]; then \
+        echo "Detectado teamserver em subpasta" && \
         cd teamserver && go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
+    elif [ -f "./go.mod" ]; then \
+        echo "Detectado teamserver na raiz" && \
+        go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
     else \
-        echo "ERRO: go.mod NÃO encontrado! Listando arquivos para depuração:" && \
+        echo "ERRO: go.mod nao encontrado em /app ou /app/teamserver!" && \
         ls -R /app && \
         exit 1; \
     fi
 
 # Runtime Stage - Alpine para o menor footprint possível
 FROM alpine:latest
-RUN apk add --no-cache python3 py3-pip bash openssl lua5.4
+
+# Instalar dependências de runtime críticas (Python, Lua, OpenSSL, C++)
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    bash \
+    openssl \
+    lua5.4 \
+    libstdc++ \
+    libgcc \
+    ca-certificates
 
 WORKDIR /app
+
+# Copia o binário e pastas essenciais do builder
 COPY --from=builder /app/havoc-teamserver .
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/profiles ./profiles
 
-# Otimização Crítica para 512MB RAM
+# Garantir permissão de execução
+RUN chmod +x ./havoc-teamserver
+
+# Otimização Crítica para instâncias de 512MB RAM
 ENV GOMEMLIMIT=450MiB
 ENV GOGC=40
 ENV MALLOC_ARENA_MAX=1
 
 EXPOSE 40056
 
-CMD ["./havoc-teamserver", "server", "--profile", "./profiles/havoc.yaotl", "-v"]
+# Comando de inicialização com verificação de perfil
+CMD ["/bin/sh", "-c", "if [ ! -f './profiles/havoc.yaotl' ]; then echo 'ERRO: Perfil havoc.yaotl nao encontrado!'; exit 1; fi; ./havoc-teamserver server --profile ./profiles/havoc.yaotl -v"]
   `.trim();
 
   const renderYaml = `
@@ -294,16 +312,16 @@ Teamserver {
                     <AlertTriangle size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-red-900 mb-1">Erro: "go mod download" falhando</h3>
+                    <h3 className="text-lg font-bold text-red-900 mb-1">Status 1: Crashed on Startup</h3>
                     <p className="text-red-800 text-sm leading-relaxed mb-3">
-                      Este erro (exit code 1) significa que o Go não achou o arquivo <code>go.mod</code>.
+                      Se o build passou mas o deploy falhou com "Exited with status 1", o erro está no comando de inicialização.
                     </p>
                     <div className="bg-white/50 p-4 rounded-xl border border-red-100 space-y-2">
-                      <p className="text-xs font-bold text-red-700 uppercase">Verifique no seu GitHub:</p>
+                      <p className="text-xs font-bold text-red-700 uppercase">O que fazer:</p>
                       <ul className="text-sm text-red-800 list-disc ml-5 space-y-1">
-                        <li>Confirme que existe um arquivo <code className="bg-white px-1">HavocV1/teamserver/go.mod</code>.</li>
-                        <li>Se o seu repositório for "flat" (arquivos do teamserver direto na raiz), mude a linha no Dockerfile de <code>WORKDIR /app/teamserver</code> para apenas <code>WORKDIR /app</code>.</li>
-                        <li>Atualizei o Dockerfile principal para ser mais resiliente (veja a aba "Configs").</li>
+                        <li>Vá na aba <strong>"Events"</strong> do Render e clique no deploy que falhou para ver os logs de saída.</li>
+                        <li>Verifique se o erro diz <code>"profile file not found"</code> ou <code>"shared library not found"</code>.</li>
+                        <li>Atualizei o <strong>Dockerfile</strong> (aba Configs) para incluir bibliotecas C++ e Lua extras que o Alpine precisa.</li>
                       </ul>
                     </div>
                   </div>
@@ -345,6 +363,14 @@ Teamserver {
                     <div>
                       <p className="font-bold text-gray-900">Build & Start Command</p>
                       <p className="text-sm text-gray-600 italic">Deixe em branco (o Dockerfile gerencia isso automaticamente)</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 p-4 hover:bg-indigo-50/50 transition-colors rounded-xl border border-transparent hover:border-indigo-100">
+                    <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold shrink-0">4</div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-green-700">Clone Automático</p>
+                      <p className="text-sm text-gray-600">O novo Dockerfile clona seu repositório <strong>HavocV1</strong> internamente. Isso evita os erros de "go.mod não encontrado".</p>
                     </div>
                   </div>
                 </div>
