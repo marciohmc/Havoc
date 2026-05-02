@@ -48,48 +48,35 @@ export default function App() {
   const dockerfile = `
 # Build Stage
 FROM golang:1.22-alpine AS builder
-
-# Instalar dependências de compilação essenciais (CGO + Python)
 RUN apk add --no-cache git build-base python3-dev pkgconfig openssl-dev libffi-dev bash lua5.4-dev
-
 WORKDIR /app
+# 1. Clonar o repositório OFICIAL
+RUN git clone https://github.com/HavocFramework/Havoc.git .
 
-# 1. Clonar o seu repositório diretamente
-RUN git clone https://github.com/marciohmc/HavocV1.git .
-
-# 2. Corrigir caminhos dos compiladores AUTOMATICAMENTE em todos os arquivos de configuração
-RUN find . -name "*.yaotl" -exec sed -i 's|Compiler64.*=.*|Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"|g' {} + && \
-    find . -name "*.yaotl" -exec sed -i 's|Compiler86.*=.*|Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"|g' {} + && \
-    find . -name "*.yaotl" -exec sed -i 's|Nasm.*=.*|Nasm = "/usr/bin/nasm"|g' {} + && \
-    echo "Verificando perfis corrigidos..."
-
-# 3. Localizar o go.mod automaticamente (Suporta qualquer estrutura)
-RUN GO_MOD_PATH=$(find . -name "go.mod" -print -quit) && \
-    if [ -n "$GO_MOD_PATH" ]; then \
-        BUILD_DIR=$(dirname "$GO_MOD_PATH"); \
-        echo "Compilando em: $BUILD_DIR"; \
-        cd "$BUILD_DIR" && go mod download && go build -ldflags="-s -w" -o /app/havoc-teamserver main.go; \
-    else \
-        echo "ERRO: go.mod nao encontrado!" && ls -R && exit 1; \
-    fi
+# 2. Build seguindo a lógica do Makefile oficial (mais estável para Docker)
+RUN cd teamserver && \
+    go mod download && \
+    go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o /app/havoc-teamserver main.go
 
 # Runtime Stage
 FROM alpine:latest
-
-# Bibliotecas essenciais e compiladores (para evitar "Status 1")
+# Instalando Mingw e NASM conforme exigido pelo Havoc original
 RUN apk add --no-cache python3 bash openssl lua5.4 libstdc++ libgcc ca-certificates sqlite-libs gcompat mingw-w64-gcc nasm
-
 WORKDIR /app
-COPY --from=builder /app/havoc-teamserver .
-COPY --from=builder /app/data ./data
-COPY --from=builder /app/profiles ./profiles
-RUN mkdir -p ./data ./profiles && chmod +x ./havoc-teamserver
-
+COPY --from=builder /app /app
+RUN chmod +x ./havoc-teamserver
 ENV GOMEMLIMIT=450MiB
 EXPOSE 40056
 
-# Inicialização com Correção de Emergência (Runtime Fix)
-CMD ["/bin/sh", "-c", "find . -name '*.yaotl' -exec sed -i 's|Compiler64.*=.*|Compiler64 = \"/usr/bin/x86_64-w64-mingw32-gcc\"|g' {} +; find . -name '*.yaotl' -exec sed -i 's|Compiler86.*=.*|Compiler86 = \"/usr/bin/i686-w64-mingw32-gcc\"|g' {} +; find . -name '*.yaotl' -exec sed -i 's|Nasm.*=.*|Nasm = \"/usr/bin/nasm\"|g' {} +; ./havoc-teamserver server --profile ./profiles/havoc.yaotl -v"]
+# Correção automática de caminhos no boot conforme o ambiente do Alpine
+CMD ["/bin/sh", "-c", " \\
+    PROFILE=$(find . -name 'havoc.yaotl' -print -quit); \\
+    echo \"Configurando perfil: $PROFILE\"; \\
+    sed -i 's|Compiler64.*=.*|Compiler64 = \"/usr/bin/x86_64-w64-mingw32-gcc\"|g' \"$PROFILE\"; \\
+    sed -i 's|Compiler86.*=.*|Compiler86 = \"/usr/bin/i686-w64-mingw32-gcc\"|g' \"$PROFILE\"; \\
+    sed -i 's|Nasm.*=.*|Nasm = \"/usr/bin/nasm\"|g' \"$PROFILE\"; \\
+    ./havoc-teamserver server --profile \"$PROFILE\" -v \\
+"]
   `.trim();
 
   const renderYaml = `
