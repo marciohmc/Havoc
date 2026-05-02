@@ -30,7 +30,7 @@ RUN GO_MOD_PATH=$(find . -name "go.mod" -print -quit) && \
 # Runtime Stage - Alpine
 FROM alpine:latest
 
-# Dependências de runtime essenciais
+# Dependências de runtime essenciais (Incluindo compiladores para o Demon)
 RUN apk add --no-cache \
     python3 \
     bash \
@@ -40,7 +40,9 @@ RUN apk add --no-cache \
     libgcc \
     ca-certificates \
     sqlite-libs \
-    gcompat
+    gcompat \
+    mingw-w64-gcc \
+    nasm
 
 WORKDIR /app
 

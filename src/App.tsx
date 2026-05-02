@@ -70,8 +70,8 @@ RUN GO_MOD_PATH=$(find . -name "go.mod" -print -quit) && \
 # Runtime Stage
 FROM alpine:latest
 
-# Bibliotecas essenciais para evitar "Status 1"
-RUN apk add --no-cache python3 bash openssl lua5.4 libstdc++ libgcc ca-certificates sqlite-libs gcompat
+# Bibliotecas essenciais e compiladores (para evitar "Status 1")
+RUN apk add --no-cache python3 bash openssl lua5.4 libstdc++ libgcc ca-certificates sqlite-libs gcompat mingw-w64-gcc nasm
 
 WORKDIR /app
 COPY --from=builder /app/havoc-teamserver .
@@ -126,6 +126,7 @@ Teamserver {
     Build {
         Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"
         Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"
+        Nasm = "/usr/bin/nasm"
     }
 }
   `.trim();
