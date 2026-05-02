@@ -38,7 +38,7 @@ RUN apk add --no-cache \
     ca-certificates \
     sqlite-libs \
     gcompat \
-    mingw-w64 \
+    i686-w64-mingw32-gcc \
     nasm
 
 WORKDIR /app
