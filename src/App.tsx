@@ -57,10 +57,11 @@ WORKDIR /app
 # 1. Clonar o seu repositório diretamente
 RUN git clone https://github.com/marciohmc/HavocV1.git .
 
-# 2. Corrigir caminhos dos compiladores AUTOMATICAMENTE em todos os perfis (.yaotl)
+# 2. Corrigir caminhos dos compiladores AUTOMATICAMENTE em todos os arquivos de configuração
 RUN find . -name "*.yaotl" -exec sed -i 's|Compiler64.*=.*|Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"|g' {} + && \
     find . -name "*.yaotl" -exec sed -i 's|Compiler86.*=.*|Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"|g' {} + && \
-    find . -name "*.yaotl" -exec sed -i 's|Nasm.*=.*|Nasm = "/usr/bin/nasm"|g' {} +
+    find . -name "*.yaotl" -exec sed -i 's|Nasm.*=.*|Nasm = "/usr/bin/nasm"|g' {} + && \
+    echo "Verificando perfis corrigidos..."
 
 # 3. Localizar o go.mod automaticamente (Suporta qualquer estrutura)
 RUN GO_MOD_PATH=$(find . -name "go.mod" -print -quit) && \
@@ -87,7 +88,8 @@ RUN mkdir -p ./data ./profiles && chmod +x ./havoc-teamserver
 ENV GOMEMLIMIT=450MiB
 EXPOSE 40056
 
-CMD ["/bin/sh", "-c", "if [ ! -f './profiles/havoc.yaotl' ]; then echo 'ERRO: Perfil config nao encontrado!'; ls -R; fi; ./havoc-teamserver server --profile ./profiles/havoc.yaotl -v"]
+# Inicialização com Correção de Emergência (Runtime Fix)
+CMD ["/bin/sh", "-c", "find . -name '*.yaotl' -exec sed -i 's|Compiler64.*=.*|Compiler64 = \"/usr/bin/x86_64-w64-mingw32-gcc\"|g' {} +; find . -name '*.yaotl' -exec sed -i 's|Compiler86.*=.*|Compiler86 = \"/usr/bin/i686-w64-mingw32-gcc\"|g' {} +; find . -name '*.yaotl' -exec sed -i 's|Nasm.*=.*|Nasm = \"/usr/bin/nasm\"|g' {} +; ./havoc-teamserver server --profile ./profiles/havoc.yaotl -v"]
   `.trim();
 
   const renderYaml = `

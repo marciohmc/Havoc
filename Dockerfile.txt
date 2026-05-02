@@ -17,10 +17,12 @@ WORKDIR /app
 # 1. Clonar o repositório diretamente
 RUN git clone https://github.com/marciohmc/HavocV1.git .
 
-# 2. CORREÇÃO CRÍTICA: Forçar caminhos dos compiladores em todos os perfis (.yaotl)
+# 2. CORREÇÃO CRÍTICA: Forçar caminhos dos compiladores em todos os arquivos de configuração
 RUN find . -name "*.yaotl" -exec sed -i 's|Compiler64.*=.*|Compiler64 = "/usr/bin/x86_64-w64-mingw32-gcc"|g' {} + && \
     find . -name "*.yaotl" -exec sed -i 's|Compiler86.*=.*|Compiler86 = "/usr/bin/i686-w64-mingw32-gcc"|g' {} + && \
-    find . -name "*.yaotl" -exec sed -i 's|Nasm.*=.*|Nasm = "/usr/bin/nasm"|g' {} +
+    find . -name "*.yaotl" -exec sed -i 's|Nasm.*=.*|Nasm = "/usr/bin/nasm"|g' {} + && \
+    echo "Verificando alteração no perfil principal:" && \
+    find . -name "havoc.yaotl" -exec cat {} +
 
 # 3. Localizar o go.mod automaticamente (Suporta qualquer estrutura)
 RUN GO_MOD_PATH=$(find . -name "go.mod" -print -quit) && \
